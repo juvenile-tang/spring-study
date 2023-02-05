@@ -1,12 +1,13 @@
 package com.spring;
 
+import com.spring.annotation.Autowired;
 import com.spring.annotation.Component;
 import com.spring.annotation.ComponentScan;
 import com.spring.annotation.Scope;
 import com.spring.entity.BeanDefinition;
 import lombok.SneakyThrows;
-
 import java.io.File;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,7 +49,18 @@ public class MySpringApplicationContext {
     @SneakyThrows
     public Object createBean(BeanDefinition beanDefinition) {
         Class clazz = beanDefinition.getClazz();
-        return clazz.getDeclaredConstructor().newInstance();
+        // 创建对象
+        Object object = clazz.getDeclaredConstructor().newInstance();
+        // 依赖注入
+        for (Field objectField : clazz.getDeclaredFields()) {
+            if (objectField.isAnnotationPresent(Autowired.class)) {
+                // 根据属性的名称来找对应的属性值
+                Object bean = getBean(objectField.getName());
+                objectField.setAccessible(true);
+                objectField.set(object, bean);
+            }
+        }
+        return object;
     }
 
     /**

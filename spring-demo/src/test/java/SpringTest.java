@@ -1,3 +1,4 @@
+import com.service.UserService;
 import com.spring.MySpringApplicationContext;
 
 /**
@@ -6,8 +7,7 @@ import com.spring.MySpringApplicationContext;
 public class SpringTest {
     public static void main(String[] args) {
         MySpringApplicationContext mySpringApplicationContext = new MySpringApplicationContext(MyAppConfig.class);
-        System.out.println(mySpringApplicationContext.getBean("userService"));
-        System.out.println(mySpringApplicationContext.getBean("userService"));
-        System.out.println(mySpringApplicationContext.getBean("userService"));
+        UserService userService = (UserService) mySpringApplicationContext.getBean("userService");
+        userService.test();
     }
 }
