@@ -1,5 +1,6 @@
 import com.service.UserService;
 import com.spring.MySpringApplicationContext;
+import config.MyAppConfig;
 
 /**
  * 模拟spring的SpringApplicationContext容器

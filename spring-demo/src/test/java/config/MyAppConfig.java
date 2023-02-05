@@ -1,3 +1,5 @@
+package config;
+
 import com.spring.annotation.ComponentScan;
 
 /**
