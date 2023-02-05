@@ -7,10 +7,13 @@ import com.spring.annotation.Scope;
 import com.spring.aware.BeanNameAware;
 import com.spring.aware.InitializingBean;
 import com.spring.entity.BeanDefinition;
+import com.spring.processor.BeanPostProcessor;
 import lombok.SneakyThrows;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -22,6 +25,8 @@ public class MySpringApplicationContext {
     private static final ConcurrentHashMap<String, Object> singletonObjects = new ConcurrentHashMap<>();
     /** 系统中所有的BeanDefinition对象都存储在这个Map中 */
     private static final ConcurrentHashMap<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
+    /** Spring Bean的后置处理器列表 */
+    private static final List<BeanPostProcessor> beanPostProcessorList = new ArrayList<>();
 
     private static final String CLAZZ_PATH_PREFIX = "com";
     private static final String CLAZZ_PATH_SUFFIX = ".class";
@@ -74,9 +79,19 @@ public class MySpringApplicationContext {
             ((BeanNameAware) object).setBeanName(beanName);
         }
 
+        // 初始化前
+        for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+           object = beanPostProcessor.postProcessBeforeInitialization(object, beanName);
+        }
+
         // 初始化
         if (object instanceof InitializingBean) {
             ((InitializingBean) object).afterPropertiesSet();
+        }
+
+        // 初始化后
+        for (BeanPostProcessor beanPostProcessor : beanPostProcessorList) {
+            object = beanPostProcessor.postProcessAfterInitialization(object, beanName);
         }
         return object;
     }
@@ -108,6 +123,13 @@ public class MySpringApplicationContext {
 
                     // 判断是否有Component注解
                     if (clazz.isAnnotationPresent(Component.class)) {
+
+                        // 初始化前实现了BeanPostProcessor接口
+                        if (BeanPostProcessor.class.isAssignableFrom(clazz)) {
+                            BeanPostProcessor beanPostProcessor = (BeanPostProcessor) clazz.getDeclaredConstructor().newInstance();
+                            beanPostProcessorList.add(beanPostProcessor);
+                        }
+
                         // 解析当前bean是否是单例bean
                         // 先获取Component注解
                         Component componentAnnotation = clazz.getDeclaredAnnotation(Component.class);
