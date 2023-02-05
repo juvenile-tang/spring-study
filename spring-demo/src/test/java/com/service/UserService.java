@@ -4,10 +4,11 @@ import com.spring.annotation.Autowired;
 import com.spring.annotation.Component;
 import com.spring.annotation.Scope;
 import com.spring.aware.BeanNameAware;
+import com.spring.aware.InitializingBean;
 
 @Component("userService")
 //@Scope("prototype")
-public class UserService implements BeanNameAware {
+public class UserService implements BeanNameAware, InitializingBean {
     @Autowired
     private OrderService orderService;
 
@@ -21,5 +22,10 @@ public class UserService implements BeanNameAware {
     @Override
     public void setBeanName(String beanName) {
         this.beanName = beanName;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        System.out.println("afterPropertiesSet Function ");
     }
 }

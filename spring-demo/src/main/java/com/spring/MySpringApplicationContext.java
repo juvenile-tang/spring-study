@@ -5,6 +5,7 @@ import com.spring.annotation.Component;
 import com.spring.annotation.ComponentScan;
 import com.spring.annotation.Scope;
 import com.spring.aware.BeanNameAware;
+import com.spring.aware.InitializingBean;
 import com.spring.entity.BeanDefinition;
 import lombok.SneakyThrows;
 import java.io.File;
@@ -67,9 +68,15 @@ public class MySpringApplicationContext {
             }
         }
 
+        // Aware回调
         // 如果实现了BeanNameAware接口就调用setBeanName方法
         if (object instanceof BeanNameAware) {
             ((BeanNameAware) object).setBeanName(beanName);
+        }
+
+        // 初始化
+        if (object instanceof InitializingBean) {
+            ((InitializingBean) object).afterPropertiesSet();
         }
         return object;
     }
