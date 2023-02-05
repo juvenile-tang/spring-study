@@ -54,10 +54,15 @@ public class MySpringApplicationContext {
         // 依赖注入
         for (Field objectField : clazz.getDeclaredFields()) {
             if (objectField.isAnnotationPresent(Autowired.class)) {
-                // 根据属性的名称来找对应的属性值
-                Object bean = getBean(objectField.getName());
-                objectField.setAccessible(true);
-                objectField.set(object, bean);
+
+                Autowired autowiredAnnotation = objectField.getAnnotation(Autowired.class);
+                if (autowiredAnnotation.required()) {
+                    // 根据属性的名称来找对应的属性值
+                    Object bean = getBean(objectField.getName());
+                    objectField.setAccessible(true);
+                    objectField.set(object, bean);
+                }
+
             }
         }
         return object;
