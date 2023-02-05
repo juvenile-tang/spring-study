@@ -4,6 +4,7 @@ import com.spring.annotation.Autowired;
 import com.spring.annotation.Component;
 import com.spring.annotation.ComponentScan;
 import com.spring.annotation.Scope;
+import com.spring.aware.BeanNameAware;
 import com.spring.entity.BeanDefinition;
 import lombok.SneakyThrows;
 import java.io.File;
@@ -35,7 +36,7 @@ public class MySpringApplicationContext {
             BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
             // 如果是单例Bean则创建Bean
             if (beanDefinition.getScope().equals(BEAN_TYPE_SINGLETO)) {
-                Object bean = createBean(beanDefinition);
+                Object bean = createBean(beanName, beanDefinition);
                 singletonObjects.put(beanName, bean);
             }
         }
@@ -47,7 +48,7 @@ public class MySpringApplicationContext {
      * @return
      */
     @SneakyThrows
-    public Object createBean(BeanDefinition beanDefinition) {
+    public Object createBean(String beanName, BeanDefinition beanDefinition) {
         Class clazz = beanDefinition.getClazz();
         // 创建对象
         Object object = clazz.getDeclaredConstructor().newInstance();
@@ -64,6 +65,11 @@ public class MySpringApplicationContext {
                 }
 
             }
+        }
+
+        // 如果实现了BeanNameAware接口就调用setBeanName方法
+        if (object instanceof BeanNameAware) {
+            ((BeanNameAware) object).setBeanName(beanName);
         }
         return object;
     }
@@ -129,7 +135,7 @@ public class MySpringApplicationContext {
                 return singletonObjects.get(beanName);
             } else {
                 // 原型的Bean, 创建Bean对象
-                return createBean(beanDefinition);
+                return createBean(beanName, beanDefinition);
             }
         } else {
             throw new NullPointerException();
