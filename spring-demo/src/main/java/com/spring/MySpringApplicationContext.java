@@ -4,6 +4,7 @@ import com.spring.annotation.Component;
 import com.spring.annotation.ComponentScan;
 import com.spring.annotation.Scope;
 import com.spring.entity.BeanDefinition;
+import lombok.SneakyThrows;
 
 import java.io.File;
 import java.net.URL;
@@ -23,19 +24,39 @@ public class MySpringApplicationContext {
     private static final String CLAZZ_PATH_SUFFIX = ".class";
     private static final String BEAN_TYPE_SINGLETO = "singleton";
 
-    public MySpringApplicationContext(Class configClass) throws ClassNotFoundException {
+    public MySpringApplicationContext(Class configClass) {
         this.configClass = configClass;
         // 解析配置类
         // 获取ComponentScan注解
         scan(configClass);
+
+        for (String beanName : beanDefinitionMap.keySet()) {
+            BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
+            // 如果是单例Bean则创建Bean
+            if (beanDefinition.getScope().equals(BEAN_TYPE_SINGLETO)) {
+                Object bean = createBean(beanDefinition);
+                singletonObjects.put(beanName, bean);
+            }
+        }
+    }
+
+    /**
+     * Bean的创建
+     * @param beanDefinition
+     * @return
+     */
+    @SneakyThrows
+    public Object createBean(BeanDefinition beanDefinition) {
+        Class clazz = beanDefinition.getClazz();
+        return clazz.getDeclaredConstructor().newInstance();
     }
 
     /**
      * 对Spring中的Bean进行扫描
      * @param configClass
-     * @throws ClassNotFoundException
      */
-    private void scan(Class configClass) throws ClassNotFoundException {
+    @SneakyThrows
+    private void scan(Class configClass) {
         ComponentScan componentScanAnnotation = (ComponentScan) configClass.getDeclaredAnnotation(ComponentScan.class);
         String scanPath = componentScanAnnotation.value();
         scanPath = scanPath.replaceAll("\\.", "\\/");
@@ -50,9 +71,9 @@ public class MySpringApplicationContext {
                 String classPath = classFile.getAbsolutePath();
 
                 if (classPath.endsWith(CLAZZ_PATH_SUFFIX)) {
-                    classPath = classPath.substring(file.getName().indexOf(CLAZZ_PATH_PREFIX),
-                            file.getName().indexOf(CLAZZ_PATH_SUFFIX));
-                    classPath = classPath.replaceAll("\\", ".");
+                    classPath = classPath.substring(classPath.indexOf(CLAZZ_PATH_PREFIX),
+                            classPath.indexOf(CLAZZ_PATH_SUFFIX));
+                    classPath = classPath.replaceAll("\\\\", "\\.");
                     Class<?> clazz = classLoader.loadClass(classPath);
 
                     // 判断是否有Component注解
@@ -64,6 +85,7 @@ public class MySpringApplicationContext {
 
                         // 判断是否有Scope注解
                         BeanDefinition beanDefinition = new BeanDefinition();
+                        beanDefinition.setClazz(clazz);
                         if (clazz.isAnnotationPresent(Scope.class)) {
                             Scope scopeAnnotation = clazz.getDeclaredAnnotation(Scope.class);
                             beanDefinition.setScope(scopeAnnotation.value());
@@ -87,14 +109,13 @@ public class MySpringApplicationContext {
         if (beanDefinitionMap.containsKey(beanName)) {
             BeanDefinition beanDefinition = beanDefinitionMap.get(beanName);
             if (beanDefinition.getScope().equals(BEAN_TYPE_SINGLETO)) {
-                Object object = singletonObjects.get(beanName);
-                return object;
+                return singletonObjects.get(beanName);
             } else {
                 // 原型的Bean, 创建Bean对象
+                return createBean(beanDefinition);
             }
         } else {
             throw new NullPointerException();
         }
-        return null;
     }
 }
